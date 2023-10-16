@@ -2,13 +2,14 @@
 title: "PREHAB study, bc cohort"
 author: "Elke van Daal"
 date: "2023-10-09"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# PREHAB study, bc cohort
 
 This subgroup analysis will investigate the effect of a multimodal prehabilitation program on functional status outcomes in patients undergoing an autologous breast reconstruction, compared to standard preoperative care. Moreover, it will be investigated whether multimodal prehabilitation has an effect on the occurence of postoperative complications.
 
@@ -54,6 +55,22 @@ bc_data <- full_data_bc %>% select(-id_status, -site, -incl_16, -surgery, -incl_
                    -surgery_technique, -surgery_procedure, different_surgery, -different_surgery_text,
                    -mortality_30_days, -adjuvant_therapy,
                    -contains('intention'), -contains('appoint'), -proms_mm4_mm5)
+
+# Check completion rate bc data
+bc_data <- bc_data %>%
+  arrange(id) %>%
+  mutate(m1_completed = case_when(
+    m1_length > 1 ~ 1,
+    is.na(m1_length) ~ 0
+  ),
+  m2_completed = case_when(
+    m2_length > 1 ~ 1,
+    is.na(m2_length) ~ 0
+  ),
+  m3_completed = case_when(
+    m3_length > 1 ~ 1,
+    is.na(m3_length) ~ 0
+  ))
 # Change name of ID variable
 sf_36 <- sf_36 %>%
   rename(id = Castor.Participant.ID) %>%
@@ -66,13 +83,39 @@ sf36_bc <- sf36_bc %>% arrange(id) %>%
     Survey.Progress > 99 ~ 1,
     Survey.Progress < 100 ~ 0
   ))
+
+
 ```
 
-# Completion rate SF36
+## Completion rate PREHAB trial
+Completion rates of measurement 1, 2 and 3 (in testroom) for full cohort, and seperated for intervention/control.
+
+```{r completion rates testroom, echo = FALSE}
+bc_data %>%
+  summarise(m1_completion_rate = mean(m1_completed),
+         m2_completion_rate = mean(m2_completed),
+         m3_completion_rate = mean(m3_completed),
+         count = n())
+
+bc_data %>%
+  filter(group == 'Intervention') %>%
+    summarise(m1_completion_rate = mean(m1_completed),
+         m2_completion_rate = mean(m2_completed),
+         m3_completion_rate = mean(m3_completed),
+         count = n())
+
+bc_data %>%
+  filter(group == 'Control') %>%
+    summarise(m1_completion_rate = mean(m1_completed),
+         m2_completion_rate = mean(m2_completed),
+         m3_completion_rate = mean(m3_completed),
+         count = n())
+
+```
+
+## Completion rate SF36
 Demonstrate completion rate of SF36 at different measurement points (for full cohort, and seperated by intervention vs control)
-
-
-```{r completion rates, echo=FALSE}
+```{r completion rates sf36, echo=FALSE}
 # full cohort
 sf36_bc %>%
   group_by(Survey.Package.Name) %>%
