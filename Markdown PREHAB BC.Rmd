@@ -1,0 +1,97 @@
+---
+title: "PREHAB study, bc cohort"
+author: "Elke van Daal"
+date: "2023-10-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# PREHAB study, bc cohort
+
+This subgroup analysis will investigate the effect of a multimodal prehabilitation program on functional status outcomes in patients undergoing an autologous breast reconstruction, compared to standard preoperative care. Moreover, it will be investigated whether multimodal prehabilitation has an effect on the occurence of postoperative complications.
+
+## Load packages
+```{r packages and data, include = FALSE}
+library(tidyverse)
+library(naniar)
+library(tableone)
+library(flextable)
+library(sjPlot)
+library(readxl)
+library(hablar)
+library(performance)
+library(skimr)
+library(gt)
+
+source("C:/Users/Elke van Daal/Documents/Radboud UMC/Fit4Society/File for codebook use as source 8-5.R")
+sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231009.csv",
+                  sep = ';')
+```
+
+
+```{r data cleaning, include = FALSE}
+
+# Filter data for cluster BC
+full_data_bc  <- full_data %>% filter(surgery_type == 'Breast')
+
+# Delete useluss columns
+bc_data <- full_data_bc %>% select(-id_status, -site, -incl_16, -surgery, -incl_ic, -incl_ic_version,
+                   -contains('testroom'), -version_ic_2, -(254:262), -contains('date'),
+                   -contains('dist'), -contains('reactance'), -contains('resistance'),
+                   -contains('ffm'),
+                   -contains('_fh'), -contains('hkk_stand'), -contains('hkk_side'),
+                   -contains('pgsga1'), -contains('pgsga2'), -contains('pgsga3'), - contains('pgsga4'),
+                   -contains('cycling_test'),
+                   -contains('ar_hf'), -contains('ar_w'), -contains('sr_w'), -contains('sr_hf'),
+                   -contains('1rm_stand'), -contains('1rm_w'), -contains('1rm_r'),
+                   -scr_hb, -scr_gluc, -scr_acsm, -fysio_ref, -contains('_g8'),
+                   -scr_ger, -surgery_gyn, -f4s_car, -f4s_long, -f4s_ger,
+                   -no_training_reason, -no_training_reason_expl, -neoadjuvant_therapy,
+                   -asa_score, -hemoglobin_preoperative_anesthesiology, -hemoglobin_preoperative,
+                   -final_measurement_loc, -contains('supp'), -contains('complication'),
+                   -surgery_technique, -surgery_procedure, different_surgery, -different_surgery_text,
+                   -mortality_30_days, -adjuvant_therapy,
+                   -contains('intention'), -contains('appoint'), -proms_mm4_mm5)
+# Change name of ID variable
+sf_36 <- sf_36 %>%
+  rename(id = Castor.Participant.ID) %>%
+  mutate(id = as.integer(str_remove(id, 'F4S_')))
+
+# Semi join with bc_data to keep participants from ABR cluster
+sf36_bc <- semi_join(sf_36, bc_data, by = 'id')
+sf36_bc <- sf36_bc %>% arrange(id) %>%
+  mutate(survey_completed = case_when(
+    Survey.Progress > 99 ~ 1,
+    Survey.Progress < 100 ~ 0
+  ))
+```
+
+# Completion rate SF36
+Demonstrate completion rate of SF36 at different measurement points (for full cohort, and seperated by intervention vs control)
+
+
+```{r completion rates, echo=FALSE}
+# full cohort
+sf36_bc %>%
+  group_by(Survey.Package.Name) %>%
+  summarise(mean_completion_rate = mean(survey_completed),
+            count = n()) 
+# full join
+full_bc_sf36 <- full_join(sf36_bc, bc_data, by = 'id')
+
+# intervention cohort
+full_bc_sf36 %>% filter(group == 'Intervention') %>%
+  group_by(Survey.Package.Name) %>%
+  summarise(mean_completion_rate = mean(survey_completed),
+            count = n()) 
+
+# control cohort
+full_bc_sf36 %>% filter(group == 'Control') %>%
+  group_by(Survey.Package.Name) %>%
+  summarise(mean_completion_rate = mean(survey_completed),
+            count = n()) 
+```
+
+
