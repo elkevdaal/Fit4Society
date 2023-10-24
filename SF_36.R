@@ -1,11 +1,31 @@
 # Load packages
 library(tidyverse)
+library(dplyr)
 
 # Load data
 file.choose()
 sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231009.csv",
                   sep = ';')
 view(sf_36)
+
+# select 36 columns to use sf36_syntax 
+sf_36 <- sf_36 %>%
+  select(P_SFvr1:P_SFvr11d)
+# Use syntax 
+sf36(sf_36)
+# Calculate mean MCS and PCS (just for test)
+sf36_calcs %>%
+  group_by(!is.na(MCS)) %>%
+  summarise(mean_MCS = mean(MCS),
+            count = n())
+sf36_calcs %>%
+  group_by(!is.na(PCS)) %>%
+  summarise(mean_PCS = mean(PCS),
+            count = n())
+# TO DO
+# add patient numbers to sf36_calcs dataframe
+# filter for surgery = ABR (before running sf36 function)
+# check if columns have the right name in syntax 
 
 # Change name of ID variable
 sf_36 <- sf_36 %>%
