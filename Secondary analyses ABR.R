@@ -39,12 +39,16 @@ full_data <- full_data %>%
 # Filter data for cluster BC and intervention group
 full_data_bc  <- full_data %>% filter(surgery_type == 'Breast', group == 'Intervention')
 glimpse(full_data_bc)
+View(full_data)
 
 # Only select columns required for secondary analyses
 glimpse(bc_data)
 bc_data <- full_data_bc %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
                                 m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
-                                m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2)
+                                m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2,
+                                smoking, smoking_count, baseline_alc, baseline_alc_amount,
+                                pre_surgery_alc, pre_surgery_alc_amount, pre_surgery_smoking,
+                                pre_surgery_smoking_amount, pre_surgery_smr)
 bc_data$m1_bia_perc_fat <- as.numeric(bc_data$m1_bia_perc_fat)
 bc_data$m2_bia_perc_fat <- as.numeric(bc_data$m2_bia_perc_fat)
 
@@ -179,4 +183,51 @@ t.test(
 
 #TO Do
 ## check outliers
+
+# Descriptive statistics regarding smoking and alcohol
+toxic_data <- bc_data %>%
+  select(id, smoking, smoking_count, baseline_alc, baseline_alc_amount,
+         pre_surgery_smoking, pre_surgery_smoking_amount, pre_surgery_smr,
+         pre_surgery_alc, pre_surgery_alc_amount) %>%
+  mutate(m1_alc_num = as.numeric(as.character(
+    fct_recode(baseline_alc,
+               '0' = 'No',
+               '1' = 'Yes'))),
+    m1_smoking_num = as.numeric(as.character(
+      fct_recode(smoking,
+                 '0' = 'No',
+                 '1' = 'Yes',
+                 "99" = 'Quit'))),
+    m2_alc_num = as.numeric(as.character(
+      fct_recode(pre_surgery_alc,
+                 '0' = 'No',
+                 '1' = 'Yes'))),
+    m2_smoking_num = as.numeric(as.character(
+        fct_recode(pre_surgery_smoking,
+                   '0' = 'No',
+                   '1' = 'Yes'))),
+    alc_amount_diff = pre_surgery_alc_amount - baseline_alc_amount)
+           
+# Check if patients stopped smoking and drinking
+
+table(toxic_data$diff_alc) #-1 indicates how many patients stopped drinking
+table(toxic_data$diff_smoking) #-1 indicates how many patients stopped smoking --> check m2_smoking question
+
+tabyl(toxic_data$diff_alc) %>%
+  adorn_totals('row') %>% #add row totals
+  adorn_pct_formatting() #format percentages to 1 decimal
+
+tabyl(toxic_data$m1_alc_num) %>%
+  adorn_totals('row') %>% #add row totals
+  adorn_pct_formatting()#format percentages to 1 decimal
+
+tabyl(toxic_data$m2_alc_num) %>%
+  adorn_totals('row') %>% #add row totals
+  adorn_pct_formatting()#format percentages to 1 decimal
+
+# Check alcohol amount --> change that not drinking alcohol equals 0 instead of NA
+tabyl(toxic_data$alc_amount_diff)
+tabyl(toxic_data$baseline_alc_amount)
+tabyl(toxic_data$pre_surgery_alc_amount)
+
 
