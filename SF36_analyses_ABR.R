@@ -19,7 +19,9 @@ glimpse(bc_data)
 ## Change name of ID variable in sf_36 data
 sf_36 <- sf_36 %>%
   rename(id = Castor.Participant.ID) %>%
-  mutate(id = as.integer(str_remove(id, 'F4S_')))
+  mutate(id = as.integer(str_remove(id, 'F4S_'))) 
+
+
 
 ## semi join bc_data with sf_36 data to keep ABR patients
 sf36_bc <- semi_join(sf_36, bc_data, by = 'id')
@@ -48,6 +50,7 @@ df_sf36 <- df_full %>% select(P_SFvr1:P_SFvr11d)
 ## Calculate SF36 scores and return dataframe 'sf36_calcs'
 sf36(df_sf36)
 print(sf36_calcs)
+View(sf36_calcs) # lot of domains missing --> check this!!
 
 ## bind sf36_calcs with df_full (make sure ID number is sorted!!)
 df_complete <- cbind(df_full, sf36_calcs)
@@ -103,3 +106,34 @@ df_complete %>%
             count = n())
 
 # CHECK different measurement moments!!! How is this arranged?
+
+# Test SF36 differences between m1 and m2
+## collapse time points levels
+sf36_intervention <- df_complete %>% filter(group == 'Intervention') %>%
+  mutate(time_point = as.factor(Survey.Package.Name),
+         time_parent = as.factor(Survey.Parent)) %>%
+  mutate(time_point = fct_collapse(time_point,
+                                   m1 = 'Meetmoment 1 (interventiegroep)',
+                                   m2 = c('ALLES ONLINE - Meetmoment 2',
+                                          'Meetmoment 2',
+                                          'ALLES ONLINE - Meetmoment 2 (INTERVENTIE)'),
+                                   m3 = c('ALLES ONLINE - Meetmoment 3 (3 maanden)',
+                                          'Meetmoment 3 (3 maanden)'),
+                                   m4 = c('Meetmoment 4 (6 maanden)',
+                                          'Meetmoment 4 (Gynaecologie)'), 
+                                   m5 = 'Meetmoment 5 (12 maanden)'))
+levels(sf36_intervention$time_parent)
+table(sf36_intervention$time_point)
+View(sf36_intervention)
+## filter for PCS summary scores
+sf36_int_pcs <- sf36_intervention %>% 
+  select(id, time_point, PCS) %>%
+  filter(time_point == 'm1' | time_point == 'm2') %>%
+  arrange(desc(time_point))
+
+## filter for MCS summary scores
+sf36_int_mcs <- sf36_intervention %>% 
+  select(id, time_point, MCS) %>%
+  filter(time_point == 'm1' | time_point == 'm2') %>%
+  arrange(desc(time_point))
+

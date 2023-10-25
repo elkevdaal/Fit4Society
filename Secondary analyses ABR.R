@@ -2,6 +2,7 @@
 
 # install packages
 #install.packages('ggstatsplot')
+#install.packages('report')
 
 # Load packages
 library(tidyverse)
@@ -21,76 +22,161 @@ library(compareGroups)
 library(skimr)
 library(gt)
 library(ggstatsplot)
+library(report)
 
 # set wd
 setwd("C:/Users/Elke van Daal/Documents/Radboud UMC/Fit4Society")
 getwd()
 
 # Run datacleaning codes from other R-script (File for codebook)
-file.choose()
-source("C:/Users/Elke van Daal/Documents/Radboud UMC/Fit4Society/File for codebook use as source 8-5.R")
+source('C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Source cleaning and codebook.R') #full_data from testroom
 
+# Create V02max column in ml/min/kg
+full_data <- full_data %>%
+  mutate(m1_vo2 = (m1_sr_vo2 * 1000)/m1_weight,
+        m2_vo2 = (m2_sr_vo2 * 1000)/m2_weight)
+  
 # Filter data for cluster BC and intervention group
 full_data_bc  <- full_data %>% filter(surgery_type == 'Breast', group == 'Intervention')
 glimpse(full_data_bc)
 
-
 # Only select columns required for secondary analyses
 glimpse(bc_data)
-bc_data_2 <- bc_data %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
+bc_data <- full_data_bc %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
                                 m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
-                                m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc)
-bc_data_2$m1_bia_perc_fat <- as.numeric(bc_data_2$m1_bia_perc_fat)
-bc_data_2$m2_bia_perc_fat <- as.numeric(bc_data_2$m2_bia_perc_fat)
+                                m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2)
+bc_data$m1_bia_perc_fat <- as.numeric(bc_data$m1_bia_perc_fat)
+bc_data$m2_bia_perc_fat <- as.numeric(bc_data$m2_bia_perc_fat)
+
+View(full_data_bc)
 
 # Calculate difference between m1 and m2
-view(bc_data_2)
-bc <- bc_data_2 %>% mutate(diff_length = m2_length - m1_length,
+bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
                      diff_weight = m2_weight - m1_weight,
                      diff_bmi = m2_bmi - m1_bmi,
                      diff_fat = m2_bia_perc_fat - m1_bia_perc_fat,
-                     diff_hkk = m2_hkk - m1_hkk,
+                     diff_hkk = m2_hkk - m1_hkk, 
                      diff_1rm = m2_1rm_calc - m1_1rm_calc,
-                     diff_v02_sr = m2_sr_vo2 - m1_sr_vo2)
-view(bc)
+                     diff_v02_sr = m2_sr_vo2 - m1_sr_vo2,
+                     diff_vo2 = m2_vo2 - m1_vo2)
 
-# Check normality of difference
-## BMI
+# From wide to long format and sort
+glimpse(bc_data_2)
+bc_long <- bc_data %>%
+pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score') %>%
+  arrange(measurement)
+View(bc_long)
+
+# Make different dataframes per parameter
+bc_bmi <- bc_long %>% filter(measurement == 'm1_bmi' | measurement == 'm2_bmi')
+bc_fat <- bc_long %>% filter(measurement == 'm1_bia_perc_fat' | measurement == 'm2_bia_perc_fat')
+bc_hkk <- bc_long %>% filter(measurement == 'm1_hkk' | measurement == 'm2_hkk')
+bc_1rm <- bc_long %>% filter(measurement == 'm1_1rm_calc' | measurement == 'm2_1rm_calc')
+bc_vo2 <- bc_long %>% filter(measurement == 'm1_vo2' | measurement == 'm2_vo2')
+
+# Statistically test difference between m1 and m2 (BMI)
+
+## Check normality of difference
 bc %>%
   plot_normality(diff_bmi)
 check_normality(bc$diff_bmi)
-## Fat
+
+## Paired t-test
+ggwithinstats(
+  data = bc_bmi,
+  x    = measurement, 
+  y    = score, 
+  type = "parametric" #using ggstatsplot
+)
+
+t.test(
+  bc_bmi$score[bc_bmi$measurement == "m1_bmi"],
+  bc_bmi$score[bc_bmi$measurement == "m2_bmi"],
+  paired = TRUE
+) #Using Base R
+
+# Statistically test difference between m1 and m2 (fat)
+## Check normality of difference
 bc %>%
   plot_normality(diff_fat)
 check_normality(bc$diff_fat)
-## HKK
+
+## Wilcoxon signed rank test
+ggwithinstats(
+  data = bc_fat,
+  x    = measurement, 
+  y    = score, 
+  type = "nonparametric" #using ggstatsplot
+)
+
+wilcox.test(
+  bc_fat$score[bc_fat$measurement == "m1_bia_perc_fat"],
+  bc_fat$score[bc_fat$measurement == "m2_bia_perc_fat"],
+  paired = TRUE
+)
+
+# Statistically test difference between m1 and m2 (hkk)
+## Check normality of difference
+
 bc %>%
   plot_normality(diff_hkk)
 check_normality(bc$diff_hkk)
-##1RM
+
+## Wilcoxon signed rank test
+ggwithinstats(
+  data = bc_hkk,
+  x    = measurement, 
+  y    = score, 
+  type = "nonparametric" #using ggstatsplot
+)
+
+wilcox.test(
+  bc_hkk$score[bc_hkk$measurement == "m1_hkk"],
+  bc_hkk$score[bc_hkk$measurement == "m2_hkk"],
+  paired = TRUE
+)
+
+# Statistically test difference between m1 and m2 (1rm)
+## Check normality of difference
 bc %>%
   plot_normality(diff_1rm)
 check_normality(bc$diff_1rm)
-## V02
-bc %>%
-  plot_normality(diff_v02_sr)
-check_normality(bc$diff_v02_sr)
 
-
-# From wide to long format
-glimpse(bc_data_2)
-bc_long <- bc_data_2 %>%
-pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score')
-view(bc_long)
-
-# Make different dataframes per parameter
-bc_bmi <- bc_long %>% filter(measurement == m1_bmi | m2_bmi | diff_bmi)
-
-# Statistically test difference between m1 and m2
+## Paired t-test
 ggwithinstats(
-  data = bc_long,
+  data = bc_1rm,
   x    = measurement, 
   y    = score, 
-  type = "nonparametric"
+  type = "parametric" #using ggstatsplot
 )
+
+t.test(
+  bc_1rm$score[bc_1rm$measurement == "m1_1rm_calc"],
+  bc_1rm$score[bc_1rm$measurement == "m2_1rm_calc"],
+  paired = TRUE
+) #Using Base R
+
+
+# Statistically test difference between m1 and m2 (vo2)
+## Check normality of difference
+bc %>%
+  plot_normality(diff_vo2)
+check_normality(bc$diff_vo2)
+
+## Paired t-test
+ggwithinstats(
+  data = bc_vo2,
+  x    = measurement, 
+  y    = score, 
+  type = "parametric" #using ggstatsplot
+)
+
+t.test(
+  bc_vo2$score[bc_vo2$measurement == "m1_vo2"],
+  bc_vo2$score[bc_vo2$measurement == "m2_vo2"],
+  paired = TRUE
+) #Using Base R
+
+#TO Do
+## check outliers
 
