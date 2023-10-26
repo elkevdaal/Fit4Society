@@ -42,7 +42,6 @@ glimpse(full_data_bc)
 View(full_data)
 
 # Only select columns required for secondary analyses
-glimpse(bc_data)
 bc_data <- full_data_bc %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
                                 m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
                                 m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2,
@@ -51,8 +50,6 @@ bc_data <- full_data_bc %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc
                                 pre_surgery_smoking_amount, pre_surgery_smr)
 bc_data$m1_bia_perc_fat <- as.numeric(bc_data$m1_bia_perc_fat)
 bc_data$m2_bia_perc_fat <- as.numeric(bc_data$m2_bia_perc_fat)
-
-View(full_data_bc)
 
 # Calculate difference between m1 and m2
 bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
@@ -65,11 +62,10 @@ bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
                      diff_vo2 = m2_vo2 - m1_vo2)
 
 # From wide to long format and sort
-glimpse(bc_data_2)
-bc_long <- bc_data %>%
+bc_long <- bc %>% select(-baseline_alc, -baseline_alc_amount, -contains('smoking'),
+                              -pre_surgery_smr, -pre_surgery_alc, -pre_surgery_alc_amount) %>%
 pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score') %>%
   arrange(measurement)
-View(bc_long)
 
 # Make different dataframes per parameter
 bc_bmi <- bc_long %>% filter(measurement == 'm1_bmi' | measurement == 'm2_bmi')
@@ -77,6 +73,33 @@ bc_fat <- bc_long %>% filter(measurement == 'm1_bia_perc_fat' | measurement == '
 bc_hkk <- bc_long %>% filter(measurement == 'm1_hkk' | measurement == 'm2_hkk')
 bc_1rm <- bc_long %>% filter(measurement == 'm1_1rm_calc' | measurement == 'm2_1rm_calc')
 bc_vo2 <- bc_long %>% filter(measurement == 'm1_vo2' | measurement == 'm2_vo2')
+
+# Descriptive statistics of parameters at timepoint m1 and m2
+## BMI
+  
+bc %>% select(id, m1_bmi, m2_bmi, diff_bmi) %>%
+  filter(complete.cases(.)) %>%
+  summarise(mean_m1_bmi = mean(m1_bmi),
+            sd_m1_bmi = sd(m1_bmi),
+            mean_m2_bmi = mean(m2_bmi),
+            sd_m2_bmi = sd(m2_bmi),
+            mean_diff_bmi = mean(diff_bmi),
+            sd_diff_bmi = sd(diff_bmi),
+            count = n())
+
+## Check function to generate summary stats 
+sumstats <- function(a, b, c, bc) {
+  bc %>% select(id, !!a, !!b, !!c) %>%
+    filter(complete.cases(.)) %>%
+    summarise(mean_m1 = mean(!!a),
+              sd_m1 = sd(!!a),
+              mean_m2 = mean(!!b),
+              sd_m2 = sd(!!b),
+              mean_diff = mean(!!c),
+              sd_diff = sd(!!c),
+              count = n())
+}
+sumstats(m1_bmi, m2_bmi, diff_bmi, bc)
 
 # Statistically test difference between m1 and m2 (BMI)
 
@@ -206,6 +229,8 @@ toxic_data <- bc_data %>%
         fct_recode(pre_surgery_smoking,
                    '0' = 'No',
                    '1' = 'Yes'))),
+    diff_alc = m2_alc_num - m1_alc_num,
+    diff_smoking = m2_smoking_num - m1_smoking_num,
     alc_amount_diff = pre_surgery_alc_amount - baseline_alc_amount)
            
 # Check if patients stopped smoking and drinking
@@ -225,9 +250,28 @@ tabyl(toxic_data$m2_alc_num) %>%
   adorn_totals('row') %>% #add row totals
   adorn_pct_formatting()#format percentages to 1 decimal
 
-# Check alcohol amount --> change that not drinking alcohol equals 0 instead of NA
+toxic_data %>% 
+  group_by(baseline_alc) %>%
+  summarize(perc_changed_drinking = 100*mean(diff_alc, na.rm = TRUE),
+            count = n()) #mean indicates proportion of patients that quit drinking (among drinkers)
+
+toxic_data %>% 
+  group_by(smoking) %>%
+  summarize(perc_changed_smoking = 100*mean(diff_smoking, na.rm = TRUE),
+            count = n())
+
+# Check alcohol amount 
+
+## change that not drinking alcohol equals 0 instead of NA
+toxic_data$baseline_alc_amount <- ifelse(
+  toxic_data$m1_alc_num == 0, 0, toxic_data$baseline_alc_amount)
+
+
 tabyl(toxic_data$alc_amount_diff)
 tabyl(toxic_data$baseline_alc_amount)
 tabyl(toxic_data$pre_surgery_alc_amount)
 
-
+toxic_data %>%
+  group_by(baseline_alc) %>%
+  summarise(changed_drinking = mean(alc_amount_diff, na.rm = TRUE),
+            count = n())
