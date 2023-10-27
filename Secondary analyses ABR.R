@@ -58,8 +58,26 @@ bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
                      diff_fat = m2_bia_perc_fat - m1_bia_perc_fat,
                      diff_hkk = m2_hkk - m1_hkk, 
                      diff_1rm = m2_1rm_calc - m1_1rm_calc,
-                     diff_v02_sr = m2_sr_vo2 - m1_sr_vo2,
-                     diff_vo2 = m2_vo2 - m1_vo2)
+                     diff_vo2_sr = m2_sr_vo2 - m1_sr_vo2,
+                     diff_vo2 = m2_vo2 - m1_vo2,
+                     perc_diff_weight = ((m2_weight - m1_weight)/m1_weight) * 100,
+                     perc_diff_bmi = ((m2_bmi - m1_bmi)/m1_bmi) * 100,
+                     perc_diff_fat = ((m2_bia_perc_fat - m1_bia_perc_fat)/m1_bia_perc_fat) * 100,
+                     perc_diff_hkk = ((m2_hkk - m1_hkk)/m1_hkk) * 100,
+                     perc_diff_1rm = ((m2_1rm_calc - m1_1rm_calc)/m1_1rm_calc) * 100,
+                     perc_diff_vo2_sr = ((m2_sr_vo2 - m1_sr_vo2)/m1_sr_vo2) * 100,
+                     perc_diff_vo2 = ((m2_vo2 - m1_vo2)/m1_vo2) * 100)
+
+# Count number of patients who have clinically meaningful differences above 10%
+cmd_rm <- bc %>% count(perc_diff_1rm >= 10) %>% #count number of people that achieve cmd
+  filter(complete.cases(.)) %>% #only keep patients with 2 measurements
+  mutate(percentage = (n / sum(n)) *100) #add percentage of people that achieve cmd
+cmd_hkk <- bc %>% count(perc_diff_hkk >= 10) %>%
+  filter(complete.cases(.)) %>%
+  mutate(percentage = (n / sum(n)) * 100)
+cmd_vo2 <- bc %>% count(perc_diff_vo2 >= 10) %>%
+  filter(complete.cases(.)) %>%
+  mutate(percentage = (n / sum(n)) * 100)
 
 # From wide to long format and sort
 bc_long <- bc %>% select(-baseline_alc, -baseline_alc_amount, -contains('smoking'),
@@ -73,35 +91,45 @@ bc_fat <- bc_long %>% filter(measurement == 'm1_bia_perc_fat' | measurement == '
 bc_hkk <- bc_long %>% filter(measurement == 'm1_hkk' | measurement == 'm2_hkk')
 bc_1rm <- bc_long %>% filter(measurement == 'm1_1rm_calc' | measurement == 'm2_1rm_calc')
 bc_vo2 <- bc_long %>% filter(measurement == 'm1_vo2' | measurement == 'm2_vo2')
+View(bc_long)
 
-# Descriptive statistics of parameters at timepoint m1 and m2
-## BMI
-  
-bc %>% select(id, m1_bmi, m2_bmi, diff_bmi) %>%
-  filter(complete.cases(.)) %>%
-  summarise(mean_m1_bmi = mean(m1_bmi),
-            sd_m1_bmi = sd(m1_bmi),
-            mean_m2_bmi = mean(m2_bmi),
-            sd_m2_bmi = sd(m2_bmi),
-            mean_diff_bmi = mean(diff_bmi),
-            sd_diff_bmi = sd(diff_bmi),
-            count = n())
-
-## Check function to generate summary stats 
-sumstats <- function(a, b, c, bc) {
-  bc %>% select(id, !!a, !!b, !!c) %>%
-    filter(complete.cases(.)) %>%
-    summarise(mean_m1 = mean(!!a),
-              sd_m1 = sd(!!a),
-              mean_m2 = mean(!!b),
-              sd_m2 = sd(!!b),
-              mean_diff = mean(!!c),
-              sd_diff = sd(!!c),
+# Function to generate summary statistics
+sumstats <- function(m1_var, m2_var, diff_var, perc_diff_var) {
+  m1_var = enquo(arg = m1_var)
+  m2_var = enquo(arg = m2_var)
+  diff_var = enquo(arg = diff_var)
+  perc_diff_var = enquo(arg = perc_diff_var)
+  bc %>% select(id, !!m1_var, !!m2_var, !!diff_var, !!perc_diff_var) %>%
+    filter(complete.cases(.)) %>%      #only include patients that completed m1 and m2
+    summarise(mean_m1 = mean(!!m1_var),
+              sd_m1 = sd(!!m1_var),
+              mean_m2 = mean(!!m2_var),
+              sd_m2 = sd(!!m2_var),
+              mean_diff = mean(!!diff_var),
+              sd_diff = sd(!!diff_var),
+              mean_perc_diff = mean(!!perc_diff_var),
+              sd_perc_diff = sd(!!perc_diff_var),
               count = n())
 }
-sumstats(m1_bmi, m2_bmi, diff_bmi, bc)
 
-# Statistically test difference between m1 and m2 (BMI)
+## BMI
+bmi_stats <- sumstats(m1_bmi, m2_bmi, diff_bmi, perc_diff_bmi) %>%
+  mutate(variable = 'bmi')
+## 1RM
+rm_stats <- sumstats(m1_1rm_calc, m2_1rm_calc, diff_1rm, perc_diff_1rm) %>%
+  mutate(variable = '1rm')
+## Fat
+fat_stats <- sumstats(m1_bia_perc_fat, m2_bia_perc_fat, diff_fat, perc_diff_fat) %>%
+  mutate(variable = 'fat percentage')
+## HKK
+hkk_stats <- sumstats(m1_hkk, m2_hkk, diff_hkk, perc_diff_hkk) %>%
+  mutate(variable = 'hkk')
+## Vo2max
+vo2_stats <- sumstats(m1_vo2, m2_vo2, diff_vo2, perc_diff_vo2) %>%
+  mutate(variable = 'V02max')
+
+# Combine summary observations into 1 table
+summary_stats <- bind_rows(bmi_stats, rm_stats, fat_stats, hkk_stats, vo2_stats)
 
 ## Check normality of difference
 bc %>%
@@ -265,7 +293,6 @@ toxic_data %>%
 ## change that not drinking alcohol equals 0 instead of NA
 toxic_data$baseline_alc_amount <- ifelse(
   toxic_data$m1_alc_num == 0, 0, toxic_data$baseline_alc_amount)
-
 
 tabyl(toxic_data$alc_amount_diff)
 tabyl(toxic_data$baseline_alc_amount)
