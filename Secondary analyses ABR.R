@@ -102,9 +102,9 @@ bc_long2 <- bc_data %>%
 bc_bmi <- bc_long %>% filter(measurement == 'm1_bmi' | measurement == 'm2_bmi')
 bc_fat <- bc_long %>% filter(measurement == 'm1_bia_perc_fat' | measurement == 'm2_bia_perc_fat')
 bc_hkk <- bc_long %>% filter(measurement == 'm1_hkk' | measurement == 'm2_hkk')
-bc_1rm <- bc_long %>% filter(measurement == 'm1_1rm_calc' | measurement == 'm2_1rm_calc')
+bc_1rm <- bc_long2 %>% filter(measurement == 'm1_1rm_calc' | measurement == 'm2_1rm_calc')
 bc_vo2 <- bc_long %>% filter(measurement == 'm1_vo2' | measurement == 'm2_vo2')
-View(bc_long)
+View(bc_1rm)
 
 # Function to generate summary statistics
 sumstats <- function(m1_var, m2_var, diff_var, perc_diff_var) {
@@ -234,10 +234,25 @@ summary(model_1rm)
 
 bc_1rm_complete <- bc_1rm %>%
   group_by(id) %>%
-  filter(!any(is.na(score))) #remove incomplete pairs (long format)
+  filter(!any(is.na(score))) #remove incomplete pairs (long format) 
+View(bc_1rm_complete)
 
-model_1rm_complete <- lmer(score ~ measurement + (1 | id), bc_1rm_complete)
+model_1rm_complete <- lmer(score ~ measurement + (1 | id), bc_1rm_complete) # basic model
+model_1rm_conf <- lmer(score ~ measurement + age +(1 | id), bc_1rm_complete) # model corrected for confounders
+tab_model(model_1rm_complete, model_1rm_conf)
 summary(model_1rm_complete) #provides same results as paired t test!
+
+library(lmerTest)
+initial_model <- lmer(score ~ measurement + age + hads_score + predis_score +
+                        baseline_move + baseline_sport +
+                        smoking + baseline_alc + (1|id), data = bc_1rm_complete) #check missings
+tab_model(initial_model)
+
+# Perform stepwise elimination based on AIC
+final_model <- step(initial_model, direction = "backward")
+final_model <- lmer(score ~ measurement +
+                      baseline_move + (1|id), data = bc_1rm_complete)
+tab_model(final_model)
 
 # Statistically test difference between m1 and m2 (vo2)
 ## Check normality of difference
