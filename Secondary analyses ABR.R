@@ -23,6 +23,7 @@ library(skimr)
 library(gt)
 library(ggstatsplot)
 library(report)
+library(lme4)
 
 # set wd
 setwd("C:/Users/Elke van Daal/Documents/Radboud UMC/Fit4Society")
@@ -41,8 +42,11 @@ full_data_bc  <- full_data %>% filter(surgery_type == 'Breast', group == 'Interv
 glimpse(full_data_bc)
 View(full_data)
 
+glimpse(full_data_bc)
 # Only select columns required for secondary analyses
-bc_data <- full_data_bc %>% select(id, m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
+bc_data <- full_data_bc %>% select(id, age, hads_score,predis_score, baseline_move,
+                                   baseline_sport, f4s_training_amount,f4s_protein_days,
+                                   m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
                                 m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
                                 m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2,
                                 smoking, smoking_count, baseline_alc, baseline_alc_amount,
@@ -85,6 +89,15 @@ bc_long <- bc %>% select(-baseline_alc, -baseline_alc_amount, -contains('smoking
 pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score') %>%
   arrange(measurement)
 
+# Same but now including baseline variables (potential confounders)
+bc_long2 <- bc_data %>% 
+  pivot_longer(cols = -c(id,age, hads_score,predis_score, baseline_move, baseline_alc, baseline_alc_amount,
+                         baseline_sport, f4s_training_amount,f4s_protein_days, smoking, smoking_count, 
+                         pre_surgery_smoking, pre_surgery_smoking_amount, pre_surgery_smr, 
+                         pre_surgery_alc, pre_surgery_alc_amount),
+                         names_to = 'measurement', values_to = 'score') %>%
+  arrange(measurement)
+
 # Make different dataframes per parameter
 bc_bmi <- bc_long %>% filter(measurement == 'm1_bmi' | measurement == 'm2_bmi')
 bc_fat <- bc_long %>% filter(measurement == 'm1_bia_perc_fat' | measurement == 'm2_bia_perc_fat')
@@ -111,6 +124,9 @@ sumstats <- function(m1_var, m2_var, diff_var, perc_diff_var) {
               sd_perc_diff = sd(!!perc_diff_var),
               count = n())
 }
+
+## Count total number of intervention patients
+nrow(full_data_bc)
 
 ## BMI
 bmi_stats <- sumstats(m1_bmi, m2_bmi, diff_bmi, perc_diff_bmi) %>%
@@ -211,6 +227,17 @@ t.test(
   paired = TRUE
 ) #Using Base R
 
+## Testing linear mixed effects models
+
+model_1rm <- lmer(score ~ measurement + (1 | id), bc_1rm) #keep all observations (so differs from paired t test)
+summary(model_1rm)
+
+bc_1rm_complete <- bc_1rm %>%
+  group_by(id) %>%
+  filter(!any(is.na(score))) #remove incomplete pairs (long format)
+
+model_1rm_complete <- lmer(score ~ measurement + (1 | id), bc_1rm_complete)
+summary(model_1rm_complete) #provides same results as paired t test!
 
 # Statistically test difference between m1 and m2 (vo2)
 ## Check normality of difference
@@ -302,3 +329,6 @@ toxic_data %>%
   group_by(baseline_alc) %>%
   summarise(changed_drinking = mean(alc_amount_diff, na.rm = TRUE),
             count = n())
+
+
+
