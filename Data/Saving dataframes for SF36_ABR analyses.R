@@ -1,4 +1,4 @@
-# Project: Fit4Society ABR subgroup analysis regarding SF36
+# Project: Fit4Society ABR subgroup analysis
 # Goal: save different dataframes necessary for analyses
 # Author: Elke van Daal
 
@@ -7,15 +7,11 @@ library(tidyverse)
 
 ## Set wd
 setwd("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data")
-getwd()
 
 ## load data
-sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231024.csv",
+sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231024.csv",
                   sep = ';') #sf-36 data
-source('C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Source cleaning and codebook.R') #full_data from testroom
-
-## load SF-36 syntax
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\SF36_syntax.R")
+source('C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Cleaning\\Source cleaning and codebook.R') #full_data from testroom
 
 ## filter testroom data to keep only ABR patients
 bc_data  <- full_data %>% filter(surgery_type == 'Breast')
