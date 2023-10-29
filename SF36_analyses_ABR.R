@@ -1,37 +1,20 @@
 # Goal: SF-36 analyses for ABR subcohort of PREHAB trial
 # Start date 24-10-2023
+# AUthor: Elke van Daal
 
 ## load packages
 library(tidyverse)
 
 ## load data
-sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231024.csv",
-                  sep = ';') #sf-36 data
-source('C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Source cleaning and codebook.R') #full_data from testroom
+load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
+load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_raw_abr.RData")
+load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
 
 ## load SF-36 syntax
 source("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\SF36_syntax.R")
 
-## filter testroom data to keep only ABR patients
-bc_data  <- full_data %>% filter(surgery_type == 'Breast')
-glimpse(bc_data)
-
-## Change name of ID variable in sf_36 data
-sf_36 <- sf_36 %>%
-  rename(id = Castor.Participant.ID) %>%
-  mutate(id = as.integer(str_remove(id, 'F4S_'))) 
-
-
-
-## semi join bc_data with sf_36 data to keep ABR patients
-sf36_bc <- semi_join(sf_36, bc_data, by = 'id')
-
-## full join sf36_bc and bc_data to add valuable columns
-full_sf36 <- full_join(sf36_bc, bc_data, by = 'id')
-glimpse(full_sf36)
-
 ## select columns for full_sf36 data and sort on id number
-df_full <- full_sf36 %>%
+df_bc <- bc_testroom_sf36 %>%
   select(id, Survey.Progress, Survey.Completed.On, Survey.Parent, 
          Survey.Package.Name, P_SFvr1:P_SFvr11d, surgery, group,
          age, sex, smoking, smoking_count, m1_length, m1_weight, m1_bmi,
@@ -46,7 +29,7 @@ df_full <- full_sf36 %>%
 
 # Collapse timepoints
 
-df_full <- df_full %>% 
+df_bc <- df_bc %>% 
   mutate(time_point = as.factor(Survey.Package.Name),
          time_parent = as.factor(Survey.Parent)) %>%
   mutate(time_point = fct_collapse(time_point,
@@ -63,12 +46,8 @@ df_full <- df_full %>%
                                           'Meetmoment 4 (Gynaecologie)'), 
                                    m5 = 'Meetmoment 5 (12 maanden)'))
                                  
-         
-df$time_point
-levels(df$time_point)
-
 # For domains 'RP' and 'RE' add 1 so there are no issues with syntax (scores are 1 and 2 instead of 0 and 1)
-df_full <- df_full %>%
+df_bc <- df_bc %>%
   mutate(P_SFvr4a = P_SFvr4a + 1,
          P_SFvr4b = P_SFvr4b + 1,
          P_SFvr4c = P_SFvr4c + 1,
@@ -78,9 +57,9 @@ df_full <- df_full %>%
          P_SFvr5c = P_SFvr5c + 1) #To do: check if responses correspond with RP and RE scores
 
 ## select columns to determine SF36 scores
-df_sf36 <- df_full %>% select(P_SFvr1:P_SFvr11d) #all timepoints
+df_sf36 <- df_bc %>% select(P_SFvr1:P_SFvr11d) #all timepoints
 
-df_sf36_int <- df %>% filter(time_point == 'm1' | time_point == 'm2', #only timepoint m1 and m2
+df_sf36_int <- df_bc %>% filter(time_point == 'm1' | time_point == 'm2', #only timepoint m1 and m2
                           group == 'Intervention') %>% #only select intervention patients
                    select(id, P_SFvr1:P_SFvr11d)
 View(df_sf36_int)
@@ -94,22 +73,22 @@ vis_miss(df_sf36_int, cluster = TRUE)
 sf36(df_sf36)
 View(sf36_calcs) # lot of domains missing --> check this!!
 
-## bind sf36_calcs with df_full (make sure ID number is sorted!!)
-df_complete <- cbind(df_full, sf36_calcs)
+## bind sf36_calcs with df_bc (make sure ID number is sorted!!)
+bc_full <- cbind(df_bc, sf36_calcs)
 
 ## remove raw score colums 
-df_complete <- df_complete %>% select(!P_SFvr1:P_SFvr11d)
+bc_full <- bc_full %>% select(!P_SFvr1:P_SFvr11d)
 glimpse(df_complete)
 
 ## filter for intervention group only, groupby time_point and calculate mhs, phs
-df_complete %>%
+bc_full %>%
   filter(group == 'Intervention') %>%
   group_by(time_point) %>%
   summarise(mean_mhs = mean(MCS, na.rm = TRUE),
             mean_phs = mean(PCS, na.rm = TRUE),
             count = n())
 ## same but now complete cases only
-df_complete %>%
+bc_full %>%
   select(id, MCS, PCS, group, time_point) %>%
   filter(group == 'Intervention',
          complete.cases(.)) %>%
