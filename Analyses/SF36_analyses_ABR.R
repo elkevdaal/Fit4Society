@@ -8,16 +8,16 @@ library(naniar)
 library(janitor)
 library(writexl)
 
-## Clear GE
+## Clear GE ##
 rm(list = ls())
 
-## load data
+## load data ##
 load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
 
-## load SF-36 syntax
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\SF36_syntax.R")
+## load SF-36 syntax ##
+source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_SF36.R")
 
-## select columns for full_sf36 data and sort on id number
+## select columns for full_sf36 data and sort on id number ##
 df_bc <- bc_testroom_sf36 %>%
   select(id, Survey.Progress, Survey.Completed.On, Survey.Parent, 
          Survey.Package.Name, P_SFvr1:P_SFvr11d, surgery, group,
@@ -31,7 +31,7 @@ df_bc <- bc_testroom_sf36 %>%
          pre_surgery_alc, pre_surgery_alc_amount, f4s_psych, f4s_psych_x)  %>%
   arrange(id)
 
-## Collapse timepoints
+## Collapse timepoints ##
 df_bc <- df_bc %>% 
   mutate(time_point = as.factor(Survey.Package.Name),
          time_parent = as.factor(Survey.Parent)) %>%
@@ -49,7 +49,8 @@ df_bc <- df_bc %>%
                                           'Meetmoment 4 (Gynaecologie)'), 
                                    m5 = 'Meetmoment 5 (12 maanden)'))
                                  
-# For domains 'RP' and 'RE' add 1 so there are no issues with syntax (scores are 1 and 2 instead of 0 and 1)
+## For domains 'RP' and 'RE' add 1 so there are no issues with syntax ##
+## (scores are 1 and 2 instead of 0 and 1) ##
 df_bc <- df_bc %>%
   mutate(P_SFvr4a = P_SFvr4a + 1,
          P_SFvr4b = P_SFvr4b + 1,
@@ -59,10 +60,10 @@ df_bc <- df_bc %>%
          P_SFvr5b = P_SFvr5b + 1,
          P_SFvr5c = P_SFvr5c + 1) #To do: check if responses correspond with RP and RE scores
 
-## select columns to determine SF36 scores
+## select columns to determine SF36 scores ##
 df_sf36 <- df_bc %>% select(P_SFvr1:P_SFvr11d) #all timepoints
 
-## look into sf36 scores (and missings) of timepoint `1 and 2 of intervention group
+## look into sf36 scores (and missings) of timepoint `1 and 2 of intervention group ##
 df_sf36_int <- df_bc %>% filter(time_point == 'm1' | time_point == 'm2', #only timepoint m1 and m2
                           group == 'Intervention') %>% #only select intervention patients
                    select(id, P_SFvr1:P_SFvr11d)
@@ -70,22 +71,22 @@ View(df_sf36_int)
 miss_case_table(df_sf36_int) 
 vis_miss(df_sf36_int, cluster = TRUE) #many missings items 3e t/m 3j
 
-## select rows (id's) that have missings
+## select rows (id's) that have missings ##
 df_sf36_na <- df_sf36_int[!complete.cases(df_sf36_int), ]
 sf36_na <- df_sf36_na %>% remove_empty('rows', cutoff = 0.05) #remove rows that ONLY have NA (except ID number)
 
-## return excel sheet to see which ID's have missings for which sf36 items
+## return excel sheet to see which ID's have missings for which sf36 items ##
 write_xlsx(sf36_na, "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_na.xlsx")
 
-## Calculate SF36 scores and return dataframe 'sf36_calcs'
+## Calculate SF36 scores and return dataframe 'sf36_calcs' ##
 sf36(df_sf36)
 View(sf36_calcs)
 
-## bind sf36_calcs with df_bc (make sure ID number is sorted!!) and save this data
+## bind sf36_calcs with df_bc (make sure ID number is sorted!!) and save this data ##
 bc_full <- cbind(df_bc, sf36_calcs)
 save(bc_full, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\full_testroom_sf36.RData")
 
-## remove columns, sort, filter 
+## remove columns, sort, filter ##
 df36 <- bc_full %>% select(!P_SFvr1:P_SFvr11d, -contains('Survey'), -sex, -time_parent,
                               -surgery, -contains('smoking'), -contains('m1_'),
                               -contains('m2_'), -hads_score, -predis_score, -int_sinefuma,
@@ -96,7 +97,7 @@ df36 <- bc_full %>% select(!P_SFvr1:P_SFvr11d, -contains('Survey'), -sex, -time_
 
 View(df36)
 
-## calculate differences in mhs and phs scores between m2 and m1
+## calculate differences in mhs and phs scores between m2 and m1 ##
 df36_wide <- df36 %>%
   pivot_wider(names_from = time_point, values_from = PF:MCS) %>% #from long to wide format
   unnest() %>% #unlist to usual dataframe
@@ -122,16 +123,16 @@ sf36_stats <- df36_wide %>%
 sf36_stats <- sf36_stats %>%
   mutate(variable = 'sf36')
 
-## Test for statistical sign differences between m2 and m1
+## Test for statistical sign differences between m2 and m1 ##
 ## TO DO --> check normality, perform paired t-test / wilcoxon signed rank
 
-## filter for intervention group only, groupby time_point and calculate mhs, phs
+## filter for intervention group only, groupby time_point and calculate mhs, phs ##
 df36 %>%
   group_by(time_point) %>%
   summarise(mean_mhs = mean(MCS, na.rm = TRUE),
             mean_phs = mean(PCS, na.rm = TRUE),
             count = n())
-## same but now complete cases only
+## same but now complete cases only ##
 df36 %>%
   select(id, MCS, PCS, group, time_point) %>%
   filter(group == 'Intervention',
