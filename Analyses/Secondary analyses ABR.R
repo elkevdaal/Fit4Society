@@ -24,7 +24,7 @@ bc_data <- bc_data %>%
 
 # Only select columns required for secondary analyses
 bc_data <- bc_data %>% select(id, age, hads_score,predis_score, baseline_move,
-                                   baseline_sport, f4s_training_amount,f4s_protein_days,
+                                   baseline_sport, f4s_training_amount,
                                    m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
                                 m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
                                 m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2,
