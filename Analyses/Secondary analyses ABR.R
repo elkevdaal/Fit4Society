@@ -12,6 +12,7 @@ library(skimr)
 library(ggstatsplot)
 library(report)
 library(lme4)
+library(dlookr)
 
 # load data
 load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
@@ -71,7 +72,7 @@ pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score') %>%
 # Same but now including baseline variables (potential confounders)
 bc_long2 <- bc_data %>% 
   pivot_longer(cols = -c(id,age, hads_score,predis_score, baseline_move, baseline_alc, baseline_alc_amount,
-                         baseline_sport, f4s_training_amount,f4s_protein_days, smoking, smoking_count, 
+                         baseline_sport, f4s_training_amount, smoking, smoking_count, 
                          pre_surgery_smoking, pre_surgery_smoking_amount, pre_surgery_smr, 
                          pre_surgery_alc, pre_surgery_alc_amount),
                          names_to = 'measurement', values_to = 'score') %>%

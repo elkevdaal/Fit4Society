@@ -5,14 +5,21 @@
 library(tidyverse)
 library(foreign)
 library(haven)
+library(performance)
+library(ggstatsplot)
+library(dlookr)
+library(sjPlot)
 
 ## Load data
 df <- read.spss("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\Complications.sav",
-          to.data.frame = TRUE)
-glimpse(df)
-names(df) <- tolower(names(df))
+          to.data.frame = TRUE) #complication data
+load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.Rdata") #testroom data abr cohort
+
+## Load cci syntax
+source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_CCI.R")
 
 ## Clean df
+names(df) <- tolower(names(df))
 df <- df %>% 
   rename(id = participantid) %>%
   mutate(id = as.integer(str_remove(id, 'F4S_'))) %>%
@@ -56,3 +63,61 @@ df_cdc <- cbind(df, cdc_counts)
 cci(cdc_counts)
 df_comp <- cbind(df_cdc, cci_scores)
 View(df_comp)
+
+## Only keep ABR patients and add column to indicate presence of cdc score >= 2
+comp_bc <- df_comp %>%
+  filter(surgery_cluster == 'Autologous Breast Reconstruction') %>%
+  mutate(cd_2_or_higher = cd_2 > 0 | cd_3a >0 | cd_3b > 0 |
+         cd_4a > 0 | cd_4b > 0 | cd_5 >0,
+         cd_2_or_higher = as.factor(cd_2_or_higher),
+         cd_2_or_higher = fct_recode(cd_2_or_higher, 'Yes' = 'TRUE',
+                                     'No' = 'FALSE'),
+         cd_2_or_higher_num = as.numeric(as.character(fct_recode(cd_2_or_higher, '1' = 'Yes',
+                                                                '0' = 'No'))))
+
+## Add group to comp_bc (control or intervention) 
+bc_group <- bc_data %>%
+  select(id, group)
+comp_bc <- full_join(comp_bc, bc_group, by = 'id')
+View(comp_bc)
+
+## Descriptives of cd_2_or_higher and cci
+comp_bc %>%
+  select(id, group, cci) %>%
+  filter(complete.cases(.)) %>%
+  group_by(group) %>%
+  summarise(mean_cci = mean(cci),
+            sd_cci = sd(cci),
+            count = n())
+comp_bc %>%
+  select(id, group, cd_2_or_higher_num) %>%
+  filter(complete.cases(.)) %>%
+  group_by(group) %>%
+  summarise(perc_cd2 = mean(cd_2_or_higher_num * 100),
+            sd_perc_cd2 = sd(cd_2_or_higher_num),
+            count = n())
+
+comp_bc %>%
+  group_by(group) %>%
+  count(cd_2_or_higher)
+
+## Statistically test differences in cd_2_or_higher and cci between control-int
+### cci
+comp_bc %>%
+  plot_normality(cci) #poisson distribution? (count data)
+check_normality(comp_bc$cci)
+
+ggbetweenstats(
+  data = comp_bc,
+  x = group,
+  y = cci,
+  type = 'nonparametric'
+)
+
+### cd_2_or_higher
+log_model <- glm(cd_2_or_higher ~ group, family = 'binomial', data = comp_bc) #fit logistic model
+summary(log_model)
+tab_model(log_model,
+          show.reflvl = T,
+          show.aic = T,
+          p.style = "numeric_stars")
