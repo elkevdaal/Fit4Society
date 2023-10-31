@@ -81,6 +81,7 @@ write_xlsx(sf36_na, "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\
 ## Calculate SF36 scores and return dataframe 'sf36_calcs' ##
 sf36(df_sf36)
 View(sf36_calcs)
+save(sf36_calcs, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
 
 ## bind sf36_calcs with df_bc (make sure ID number is sorted!!) and save this data ##
 bc_full <- cbind(df_bc, sf36_calcs)
