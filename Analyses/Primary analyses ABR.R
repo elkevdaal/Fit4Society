@@ -116,7 +116,6 @@ ggbetweenstats(
 
 ### cd_2_or_higher
 log_model <- glm(cd_2_or_higher ~ group, family = 'binomial', data = comp_bc) #fit logistic model
-summary(log_model)
 tab_model(log_model,
           show.reflvl = T,
           show.aic = T,

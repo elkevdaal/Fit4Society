@@ -67,7 +67,6 @@ df_sf36 <- df_bc %>% select(P_SFvr1:P_SFvr11d) #all timepoints
 df_sf36_int <- df_bc %>% filter(time_point == 'm1' | time_point == 'm2', #only timepoint m1 and m2
                           group == 'Intervention') %>% #only select intervention patients
                    select(id, P_SFvr1:P_SFvr11d)
-View(df_sf36_int)
 miss_case_table(df_sf36_int) 
 vis_miss(df_sf36_int, cluster = TRUE) #many missings items 3e t/m 3j
 
@@ -80,6 +79,7 @@ write_xlsx(sf36_na, "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\
 
 ## Calculate SF36 scores and return dataframe 'sf36_calcs' ##
 sf36(df_sf36)
+sf36_calcs <- cbind(df_bc$id, df_bc$time_point, sf36_calcs)
 View(sf36_calcs)
 save(sf36_calcs, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
 
@@ -143,7 +143,7 @@ df36 %>%
             mean_phs = mean(PCS),
             count = n())
 
-# CHECK different measurement moments!!! How is this arranged?
+
 
 
 
