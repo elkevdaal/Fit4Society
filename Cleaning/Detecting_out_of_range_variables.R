@@ -1,5 +1,5 @@
 #Name: Elke van Daal
-#Project: Fit4Society - Cleaning - Detecting out-of-range values
+#Project: Fit4Society - Cleaning, Detecting out-of-range values
 #Start Date: 17-4-2023
 
 #Load packages
