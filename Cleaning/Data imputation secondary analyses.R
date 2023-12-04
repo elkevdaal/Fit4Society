@@ -2,16 +2,10 @@
 # Goal: Data imputation for sf 36 analyses ABR
 
 ## Load packages
-
-# Goal: Data imputation for secondary analyses ABR
-
-## Load Mice package
 library(mice)
 library(janitor)
 library(tidyverse)
 library(naniar)
-library(MKmisc)
-library(mitools)
 
 ## Load SF36 data
 load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
