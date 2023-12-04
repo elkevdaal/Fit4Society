@@ -50,7 +50,7 @@ full_data <- full_data %>% mutate(M2_fietstest = as.factor(as.character(M2_fiets
   mutate(M2_fiestest = fct_recode(M2_fietstest, 'Steep Ramp' = '1', 'Astrand-Rhyming' = '2'))
 
 #Select first 1000 patients
-df_1000 <- full_data %>% filter(ID >= 1 & ID <= 1000)
+df_1000 <- full_data %>% filter(ID >= 1000 & ID <= 1500)
 
 #get column numbers of columns to be removed
 match('Hemoglobin_Preoperative_Anesthesiology', names(df_1000))
@@ -73,10 +73,6 @@ df_select <- df_1000 %>%
          -F4S_SineFuma, -F4S_SineFuma_nee, -F4S_psych, -F4S_psych_x, -VB_MM3_Supplementen_1, -VB_MM3_Supplementen_Specificatie_1,
          -starts_with('Afspraak'), -Vragenlijsten_MM4_MM5, -Follow_Up_Moment, -Reason_Lost_to_Follow_Up,
          -F4S_car, -F4S_long, -F4S_ger, -Versie_IC_2, -(183:212), -Neoadjuvant_Therapy, -VB_1_6_1_1)
-
-#View structure of df_select 
-glimpse(df_select)
-view(df_select)
 
 #write function to detect incorrect categories
 incorrect_category <- function(target_variable) {
@@ -355,7 +351,7 @@ empty_row <- rowSums(is.na(failures_df)) == 63                                  
 failures_df <- failures_df[!empty_row, ]                                          #delete empty rows out of failures_df
 
 #Export failures2_df into excel file
-write_xlsx(failures2_df,"")
+write_xlsx(failures2_df,"xlsx")
 
 #Export failures_df into excel file
 write_xlsx(failures_df,"")
