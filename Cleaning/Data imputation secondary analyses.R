@@ -1,5 +1,5 @@
 # Author: Elke van Daal
-# Goal: Data imputation for sf 36 analyses ABR
+# Goal: Data imputation for sf36 analyses ABR
 
 ## Load packages
 library(mice)
@@ -8,7 +8,7 @@ library(tidyverse)
 library(naniar)
 
 ## Load SF36 data
-load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
+load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
 
 ## to do: check groups(intervention or both int and control)
 
@@ -37,7 +37,7 @@ sf36_imp <- mice(sf36_before_imp, m = m, method = "pmm", predictorMatrix = predi
 imp_long <- complete(sf36_imp, action = 'long', include = TRUE) # include original dataframe?
 View(imp)
 
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_SF36_SS.R") # load sf36_ss syntax
+source("C:\\Users\\Elke\\Documents\\R\\Syntaxes\\Syntax_SF36_SS.R") # load sf36_ss syntax
 
 imp_ss <- imp_long %>%
   select(PF, RP, BP, GH, VT, SF, RE, MH) # select variables needed as input for syntax
@@ -71,7 +71,7 @@ View(imp)
 imp_ss <- imp %>%
   select(PF, RP, BP, GH, VT, SF, RE, MH)
 
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_SF36_SS.R") # load sf36_ss syntax
+source("C:\\Users\\Elke\\Documents\\R\\Syntaxes\\Syntax_SF36_SS.R") # load sf36_ss syntax
 sf36_ss(imp_ss)
 
 ## bind id and time_point variables to complete sf36 df
@@ -79,7 +79,7 @@ complete_sf36_imp <- cbind(imp[ , 1:4], sf36_ss)
 View(complete_sf36_imp)
 
 ## save imputed dataframe for analysis
-save(complete_sf36_imp, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\complete_sf36_imp.RData")
+save(complete_sf36_imp, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\complete_sf36_imp.RData")
 
 
 test <- complete_sf36_imp %>%

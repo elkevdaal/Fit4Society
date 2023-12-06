@@ -16,7 +16,7 @@ library(dlookr)
 library(plotly)
 
 # load data
-load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
+load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
 
 # Create V02max column in ml/min/kg
 bc_data <- bc_data %>%
@@ -42,7 +42,7 @@ bc_data$m1_bia_perc_fat <- as.numeric(bc_data$m1_bia_perc_fat)
 bc_data$m2_bia_perc_fat <- as.numeric(bc_data$m2_bia_perc_fat)
 
 # Save bc_data (for imputation)
-save(bc_data, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\bc_data_before_imp.RData")
+save(bc_data, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\bc_data_before_imp.RData")
 
 # Calculate difference between m1 and m2
 bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
