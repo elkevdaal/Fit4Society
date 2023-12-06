@@ -6,12 +6,13 @@
 library(tidyverse)
 
 ## Set wd
-setwd("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data")
+setwd("C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\")
 
 ## load data
-sf_36 <- read.csv("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231024.csv",
+sf_36 <- read.csv("Z:\\Data PREHAB trial\\F4S_PREHAB_trial_SF36_JUIST_-_Nederlands_export_20231024.csv",
                   sep = ';') #sf-36 data
-source('C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Cleaning\\Source cleaning and codebook.R') #full_data from testroom
+
+source("C:\\Users\\Elke\\Documents\\R\\Fit4Surgery\\Cleaning\\Source cleaning and codebook.R") #full_data from testroom
 
 ## filter testroom data to keep only ABR patients
 bc_data  <- full_data %>% filter(surgery_type == 'Breast')
@@ -29,8 +30,8 @@ sf36_raw_bc <- semi_join(sf_36, bc_data, by = 'id')
 bc_testroom_sf36 <- full_join(sf36_raw_bc, bc_data, by = 'id')
 
 ## save dataframes
-save(bc_data, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
-save(sf36_raw_bc, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_raw_abr.RData")
-save(bc_testroom_sf36, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
+save(bc_data, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
+save(sf36_raw_bc, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\sf36_raw_abr.RData")
+save(bc_testroom_sf36, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
 
 ### Exit  ###
