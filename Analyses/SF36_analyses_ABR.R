@@ -12,10 +12,10 @@ library(writexl)
 rm(list = ls())
 
 ## load data ##
-load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
+load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_sf36raw_abr.RData")
 
 ## load SF-36 syntax ##
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_SF36.R")
+source("C:\\Users\\Elke\\Documents\\R\\Syntaxes\\Syntax_SF36.R")
 
 ## select columns for full_sf36 data and sort on id number ##
 df_bc <- bc_testroom_sf36 %>%
@@ -75,17 +75,17 @@ df_sf36_na <- df_sf36_int[!complete.cases(df_sf36_int), ]
 sf36_na <- df_sf36_na %>% remove_empty('rows', cutoff = 0.05) #remove rows that ONLY have NA (except ID number)
 
 ## return excel sheet to see which ID's have missings for which sf36 items ##
-write_xlsx(sf36_na, "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_na.xlsx")
+write_xlsx(sf36_na, "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\sf36_na.xlsx")
 
 ## Calculate SF36 scores and return dataframe 'sf36_calcs' ##
 sf36(df_sf36)
 sf36_calcs <- cbind(df_bc$id, df_bc$time_point, sf36_calcs)
 View(sf36_calcs)
-save(sf36_calcs, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
+save(sf36_calcs, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\sf36_summaryscores.RData")
 
 ## bind sf36_calcs with df_bc (make sure ID number is sorted!!) and save this data ##
 bc_full <- cbind(df_bc, sf36_calcs)
-save(bc_full, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\full_testroom_sf36.RData")
+save(bc_full, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\full_testroom_sf36.RData")
 
 ## remove columns, sort, filter ##
 df36 <- bc_full %>% select(!P_SFvr1:P_SFvr11d, -contains('Survey'), -sex, -time_parent,
