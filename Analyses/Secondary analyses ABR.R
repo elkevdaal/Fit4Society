@@ -13,6 +13,7 @@ library(ggstatsplot)
 library(report)
 library(lme4)
 library(dlookr)
+library(plotly)
 
 # load data
 load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
@@ -27,13 +28,21 @@ bc_data <- bc_data %>%
 bc_data <- bc_data %>% select(id, age, hads_score,predis_score, baseline_move,
                                    baseline_sport, f4s_training_amount,
                                    m1_length, m1_weight, m1_bmi, m1_bia_perc_fat,
-                                m1_hkk, m1_sr_vo2, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
-                                m2_bia_perc_fat, m2_hkk, m2_sr_vo2, m2_1rm_calc, m1_vo2, m2_vo2,
+                                m1_hkk, m1_1rm_calc, m2_length, m2_weight, m2_bmi, 
+                                m2_bia_perc_fat, m2_hkk, m2_1rm_calc, m1_vo2, m2_vo2,
                                 smoking, smoking_count, baseline_alc, baseline_alc_amount,
                                 pre_surgery_alc, pre_surgery_alc_amount, pre_surgery_smoking,
-                                pre_surgery_smoking_amount, pre_surgery_smr)
+                                pre_surgery_smoking_amount, pre_surgery_smr) %>%
+  mutate(m1_completed = ifelse(!is.na(m1_length), 1, 0), #indicate whether measurements were completed
+         m2_completed = ifelse(!is.na(m2_length), 1, 0),
+         smoking_count = ifelse(smoking == 'No' | smoking == 'Quit', 0, smoking_count), #change NA's to 0 if applicable
+         baseline_alc_amount = ifelse(baseline_alc == 'No', 0, baseline_alc_amount),
+         pre_surgery_alc_amount = ifelse(pre_surgery_alc == "No", 0, pre_surgery_alc_amount))
 bc_data$m1_bia_perc_fat <- as.numeric(bc_data$m1_bia_perc_fat)
 bc_data$m2_bia_perc_fat <- as.numeric(bc_data$m2_bia_perc_fat)
+
+# Save bc_data (for imputation)
+save(bc_data, file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\bc_data_before_imp.RData")
 
 # Calculate difference between m1 and m2
 bc <- bc_data %>% mutate(diff_length = m2_length - m1_length,
@@ -68,6 +77,9 @@ bc_long <- bc %>% select(-baseline_alc, -baseline_alc_amount, -contains('smoking
                               -pre_surgery_smr, -pre_surgery_alc, -pre_surgery_alc_amount) %>%
 pivot_longer(cols = !id, names_to = 'measurement', values_to = 'score') %>%
   arrange(measurement)
+
+View(bc_long)
+View(bc)
 
 # Same but now including baseline variables (potential confounders)
 bc_long2 <- bc_data %>% 
@@ -126,6 +138,9 @@ vo2_stats <- sumstats(m1_vo2, m2_vo2, diff_vo2, perc_diff_vo2) %>%
 
 # Combine summary observations into 1 table
 summary_stats <- bind_rows(bmi_stats, rm_stats, fat_stats, hkk_stats, vo2_stats)
+
+# plot outliers
+plot_outlier(bc, diff_1rm, diff_vo2)
 
 ## Check normality of difference
 bc %>%
@@ -193,6 +208,12 @@ bc %>%
   plot_normality(diff_1rm)
 check_normality(bc$diff_1rm)
 
+## Check outliers
+check_outliers(bc$diff_1rm)
+outliers_rm <- ggplot(bc, aes(m1_1rm_calc, m2_1rm_calc)) +
+  geom_point()
+ggplotly(outliers_rm)
+
 ## Paired t-test
 ggwithinstats(
   data = bc_1rm,
@@ -239,6 +260,13 @@ tab_model(final_model)
 bc %>%
   plot_normality(diff_vo2)
 check_normality(bc$diff_vo2)
+
+## Check outliers
+check_outliers(bc$diff_vo2)
+outliers_vo2 <- ggplot(bc, aes(m1_vo2, m2_vo2, group = id)) +
+  geom_point()
+ggplotly(outliers_vo2)
+View(bc)
 
 ## Paired t-test
 ggwithinstats(
