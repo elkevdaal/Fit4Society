@@ -10,13 +10,14 @@ library(ggstatsplot)
 library(dlookr)
 library(sjPlot)
 
+file.choose()
 ## Load data
-df <- read.spss("C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\Complications.sav",
+df <- read.spss("Z:\\Data PREHAB trial\\F4S PREHAB SPSS - Luuk.sav",
           to.data.frame = TRUE) #complication data
-load(file = "C:\\Users\\Elke van Daal\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.Rdata") #testroom data abr cohort
+load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.Rdata") #testroom data abr cohort
 
 ## Load cci syntax
-source("C:\\Users\\Elke van Daal\\Documents\\R\\Syntaxes\\Syntax_CCI.R")
+source("C:\\Users\\Elke\\Documents\\R\\Syntaxes\\Syntax_CCI.R")
 
 ## Clean df
 names(df) <- tolower(names(df))
