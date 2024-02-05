@@ -15,8 +15,8 @@ library(lme4)
 library(dlookr)
 library(plotly)
 
-# load data
-load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData")
+# load data (only data needed from participating intervention patients!)
+load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.RData") 
 
 # Create V02max column in ml/min/kg
 bc_data <- bc_data %>%

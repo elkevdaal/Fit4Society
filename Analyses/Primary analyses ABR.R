@@ -11,10 +11,13 @@ library(dlookr)
 library(sjPlot)
 
 file.choose()
-## Load data
-df <- read.spss("Z:\\Data PREHAB trial\\F4S PREHAB SPSS - Luuk.sav",
-          to.data.frame = TRUE) #complication data
+## Load data 
+df <- read.spss("Z:\\Data PREHAB trial\\F4S PREHAB SPSS - Joelle.sav",
+          to.data.frame = TRUE) #complication data 05-02-2024
 load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\testroom_data_abr.Rdata") #testroom data abr cohort
+
+## Add data from EPF (i.e., clinical data, age)
+
 
 ## Load cci syntax
 source("C:\\Users\\Elke\\Documents\\R\\Syntaxes\\Syntax_CCI.R")
@@ -89,6 +92,8 @@ comp_bc %>%
   group_by(group) %>%
   summarise(mean_cci = mean(cci),
             sd_cci = sd(cci),
+            min_cci = min(cci),
+            max_cci = max(cci),
             count = n())
 comp_bc %>%
   select(id, group, cd_2_or_higher_num) %>%
@@ -101,6 +106,25 @@ comp_bc %>%
 comp_bc %>%
   group_by(group) %>%
   count(cd_2_or_higher)
+
+## visualize data
+comp_bc %>%
+  filter(!is.na(cci)) %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(group, cci)) +
+  geom_boxplot()
+
+comp_bc %>%
+  filter(!is.na(cci)) %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(cd_2_or_higher, fill = group)) +
+  geom_bar(position = "dodge")
+
+comp_bc %>%
+  ggplot(aes(x = cci)) +
+  geom_histogram(bins = 5, binwidth = 10)
+  
+
 
 ## Statistically test differences in cd_2_or_higher and cci between control-int
 ### cci
@@ -115,9 +139,22 @@ ggbetweenstats(
   type = 'nonparametric'
 )
 
-### cd_2_or_higher
-log_model <- glm(cd_2_or_higher ~ group, family = 'binomial', data = comp_bc) #fit logistic model
-tab_model(log_model,
+lin_model <- lm(cci ~ group, data = comp_bc) #normal distribution
+model <- glm(cci ~ group, family = "gaussian", data = comp_bc) #normal distribution
+p_model <- glm(cci ~ group, family = "poisson", data = comp_bc) #poisson distribution
+tab_model(lin_model,
           show.reflvl = T,
           show.aic = T,
           p.style = "numeric_stars")
+
+
+### cd_2_or_higher
+logRR_model <- glm(cd_2_or_higher ~ group, family = 'binomial'(link = "log"), data = comp_bc) #fit logistic model with risk ratios
+logOR_model <- glm(cd_2_or_higher ~ group, family = 'binomial', data = comp_bc) #fit logistic model with odds ratios
+tab_model(logOR_model, logRR_model,
+          show.reflvl = T,
+          show.aic = T,
+          p.style = "numeric_stars")
+?tab_model
+
+?glm()
