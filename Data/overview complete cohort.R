@@ -2,6 +2,8 @@
 ###### Project: Fit4Surgery PREHAB trial ABR cohort - create one dataset #####
 ###### Start date: 7-02-2024 #####################################
 
+# next time: create R markdown file for all steps and explanations!
+
 # load packages
 library(tidyverse)
 library(haven)
