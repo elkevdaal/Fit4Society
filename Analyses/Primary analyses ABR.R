@@ -12,6 +12,7 @@ library(sjPlot)
 library(janitor)
 
 ## Load data 
+rm(list = ls())
 df <- read.spss("Z:\\Data PREHAB trial\\F4S PREHAB SPSS - Joelle.sav",
           to.data.frame = TRUE) #complication data 05-02-2024
 load(file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\dp.Rdata") #abr cohort

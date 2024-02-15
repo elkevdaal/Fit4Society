@@ -138,9 +138,18 @@ table(sd$sf36_m1_present, sd$sf36_m2_present)
 
 ## select useful columns only
 sd <- sd %>%
-  select()
+  select(1:11, 19:23, 26:28, 38, 43, 50:53, 55:57, 63, 75, 76, 81,
+         84:86, 96, 101, 108:111, 113:115, 118, 119, 139:141, 143,
+         163:167, 172:176, 178:184, 186, 187, 302:304, 310, 313:336)
+#check surgery soon 
 
 ## relocate columns (m1 and m2 sorted)
+sd <- sd %>%
+  relocate(c(PF_m1, RP_m1, BP_m1, GH_m1, VT_m1, SF_m1, RE_m1, MH_m1, PCS_m1, MCS_m1),
+           .after = m1_1rm_calc)
+sd <- sd %>%
+  relocate(c(PF_m2, RP_m2, BP_m2, GH_m2, VT_m2, SF_m2, RE_m2, MH_m2, PCS_m2, MCS_m2),
+           .after = m2_1rm_calc)
 
 # Save sd (for imputation)
 save(sd, file = "C:\\Users\\Elke\\Documents\\R\\Fit4Society\\Data\\sd_before_imp.RData")
