@@ -108,7 +108,7 @@ df36_wide <- df36 %>%
          perc_diff_mcs = (MCS_m2 - MCS_m1) / MCS_m1 * 100,
          perc_diff_pcs = (PCS_m2 - PCS_m1) / PCS_m1 * 100) #calculate difference 
 
-View(df36_wide)
+
 
 sf36_stats <- df36_wide %>% 
   filter(complete.cases(.)) %>% #filter for complete pairs

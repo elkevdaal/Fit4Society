@@ -68,7 +68,7 @@ pd[, c("complication1_cdc", "complication2_cdc", "complication3_cdc", "complicat
         2, function(x) ifelse(is.na(x), 0, x)) #replace NA's to 0 
 
 ## Count occurences of Clavin Dindo scores by row
-cd_1 <- rowSums(pd[, c("complication1_cdc":complication )] == '1')
+cd_1 <- rowSums(pd[, c(51:55)] == '1')
 cd_2 <- rowSums(pd[, c(51:55)] == '2')
 cd_3a <- rowSums(pd[, c(51:55)] == '3a')
 cd_3b <- rowSums(pd[, c(51:55)] == '3b')
@@ -144,7 +144,7 @@ pd %>%
 ## Statistically test differences in cd_2_or_higher and cci between control-int
 ### cci
 pd %>%
-  plot_normality(cci) #gamma distribution
+  plot_normality(cci) #distribution
 check_normality(pd$cci)
 
 ggbetweenstats(
