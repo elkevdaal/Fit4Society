@@ -10,6 +10,8 @@ library(ggstatsplot)
 library(dlookr)
 library(sjPlot)
 library(janitor)
+library(gamlss)
+library(see)
 
 ## Load data 
 rm(list = ls())
@@ -68,7 +70,7 @@ pd[, c("complication1_cdc", "complication2_cdc", "complication3_cdc", "complicat
   apply(pd[, c("complication1_cdc", "complication2_cdc", "complication3_cdc", "complication4_cdc", "complication5_cdc")], 
         2, function(x) ifelse(is.na(x), 0, x)) #replace NA's to 0 
 
-## Count occurences of Clavin Dindo scores by row
+## Count occurences of Clavin Dindo scores by row (check if rows are correct)
 cd_1 <- rowSums(pd[, c(51:55)] == '1')
 cd_2 <- rowSums(pd[, c(51:55)] == '2')
 cd_3a <- rowSums(pd[, c(51:55)] == '3a')
@@ -82,7 +84,7 @@ cdc_counts <- cbind(cd_1, cd_2, cd_3a, cd_3b, cd_4a, cd_4b, cd_5) ## input for C
 View(cdc_counts)
 pd <- cbind(pd, cdc_counts)
 
-## Calculate CCI scores with cci syntax and bind with dataframe 
+## Calculate CCI scores with cci syntax and bind with dataframe (make sure ids are sorted)
 cci(cdc_counts)
 pd <- cbind(pd, cci_scores)
 View(pd)
@@ -156,12 +158,40 @@ ggbetweenstats(
 )
 
 lin_model <- lm(cci ~ group, data = pd) #normal distribution
-model <- glm(cci ~ group, family = "gaussian", data = comp_bc) #normal distribution
-g_model <- glm(cci ~ group, family = ""(link = ""), data = pd) # what model to use, zero-inflated?
+check_model(lin_model) # check assumptions of linear regression
+
 tab_model(lin_model,
           show.reflvl = T,
           show.aic = T,
           p.style = "numeric_stars")
+
+## use of zero inflated beta regression
+### rescale cci
+pd_bezi <- pd %>%
+  mutate(cci_rescaled = cci / 100) %>%
+  select(group, cci_rescaled)
+
+beinf <- BEINF(mu.link = "logit", sigma.link = "logit", nu.link = "log", tau.link = "log") #beta inflated family
+        # similar to bezi but allows zeros and ones as values for response variable
+bezi <- BEZI(mu.link = "logit", sigma.link = "log", nu.link = "logit") #zero inflated beta family
+
+b_model <- gamlss(cci_rescaled ~ group, data = pd_bezi, family = beinf) #fit model
+          # HOW TO OBTAIN COEFFICIENT FOR NU COMPONENT?
+summary(b_model) #AIC a lot lower compared to linear model
+
+?gamlss
+
+## interpretation of model
+### 1. mu section shows effect of predictors on mean outcome within range of non-zero values (when complications occur)
+### e.g. if coefficient for group is negative and stat. sign., it suggests that the intervention is associated
+### with a lower mean value of CCI within the range of non-zero values.
+
+### 2. nu section shows effect of predictors on probability of excess zeros (no complications),
+### i.e. the probability of observing zero's beyond what would be expected based on the beta distribution alone
+### e.g. if coefficient for group is positive and stat. sign., it suggests that the intervention is associated
+### with a higher probability of excess zero's in CCI (so greater likelihood of no complications).
+
+?gamlss
 
 ### cd_2_or_higher
 logRR_model <- glm(cd_2_or_higher ~ group, family = 'binomial'(link = "log"), data = pd) #fit logistic model with risk ratios
