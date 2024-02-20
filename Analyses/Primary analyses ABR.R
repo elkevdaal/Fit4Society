@@ -106,6 +106,14 @@ pd <- pd %>%
          cd_2_or_higher_num = as.numeric(as.character(fct_recode(cd_2_or_higher, '1' = 'Yes',
                                                                 '0' = 'No'))))
 
+## add column to indicate presence of complications (cci > 0)
+pd <- pd %>%
+  mutate(cci_above_zero = as.factor(ifelse(
+    cci > 0, "yes", "no")),
+    cci_above_zero_num = as.numeric((ifelse(
+      cci > 0, "1", "0")
+    )))
+
 # Step 3
 ## join pd with clinical characteristics from spss into pd
 ## check if all study_id's are in common, number of observations of pd should remain the same
@@ -127,6 +135,15 @@ pd %>%
   summarise(perc_cd2 = mean(cd_2_or_higher_num * 100),
             sd_perc_cd2 = sd(cd_2_or_higher_num),
             count = n())
+pd %>%
+  select(study_id, group, cci_above_zero_num) %>%
+  group_by(group) %>%
+  summarise(perc_cci_above_zero = mean(cci_above_zero_num * 100),
+            sd_cci_above_zero = sd(cci_above_zero_num),
+            count = n())
+pd %>%
+  group_by(group) %>%
+  count(cci_above_zero)
 
 pd %>%
   group_by(group) %>%
@@ -167,7 +184,7 @@ tab_model(lin_model,
 
 ## use of zero inflated beta regression
 ### rescale cci
-pd_bezi <- pd %>%
+pd_beinf <- pd %>%
   mutate(cci_rescaled = cci / 100) %>%
   select(group, cci_rescaled)
 
@@ -175,8 +192,13 @@ beinf <- BEINF(mu.link = "logit", sigma.link = "logit", nu.link = "log", tau.lin
         # similar to bezi but allows zeros and ones as values for response variable
 
 model1 <- gamlss(cci_rescaled ~ group, 
-                  nu.formula = cci_rescaled ~ group, data = pd_bezi, family = beinf) #fit model for mu and nu
-model2 <- gamlss(cci_rescaled ~ group, data = pd_bezi, family = beinf) #fit model for mu  
+                  nu.formula = cci_rescaled ~ group, data = pd_beinf, family = beinf) #fit model for mu and nu
+model2 <- gamlss(cci_rescaled ~ group, data = pd_beinf, family = beinf) #fit model for mu  
+
+      ## check distribution of residuals!! 
+      ## observaties plotten 
+      ## toetsen van zero inflation
+      ## ook kijken naar alleen beta regression (model2?) vs zero inflated beta regression
 
 summary(model1) 
 summary(model2) #AIC a lot lower compared to linear model, quite good model fit
@@ -188,7 +210,7 @@ pdf.plot(model2, from = 0, to = 1)
 ### 1. mu section shows effect of predictors on mean outcome within range of non-zero values (when complications occur)
 ### e.g. if coefficient for group is negative and stat. sign., it suggests that the intervention is associated
 ### with a lower mean value of CCI within the range of non-zero values.
-
+p
 ### 2. nu section shows effect of predictors on probability of excess zeros (no complications),
 ### i.e. the probability of observing zero's beyond what would be expected based on the beta distribution alone
 ### e.g. if coefficient for group is positive and stat. sign., it suggests that the intervention is associated
