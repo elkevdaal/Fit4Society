@@ -12,6 +12,8 @@ library(sjPlot)
 library(janitor)
 library(gamlss)
 library(see)
+library(AER)
+library(pscl)
 
 ## Load data 
 rm(list = ls())
@@ -188,37 +190,53 @@ pd_beinf <- pd %>%
   mutate(cci_rescaled = cci / 100) %>%
   select(group, cci_rescaled)
 
-beinf <- BEINF(mu.link = "logit", sigma.link = "logit", nu.link = "log", tau.link = "log") #beta inflated family
-        # similar to bezi but allows zeros and ones as values for response variable
+### vectorize beta inflated family (similar to bezi but allows zeros and ones as values for response variable)
+beinf <- BEINF(mu.link = "logit", sigma.link = "logit", nu.link = "log", tau.link = "log") 
+        
+### create model for mu and nu
 
 model1 <- gamlss(cci_rescaled ~ group, 
-                  nu.formula = cci_rescaled ~ group, data = pd_beinf, family = beinf) #fit model for mu and nu
-model2 <- gamlss(cci_rescaled ~ group, data = pd_beinf, family = beinf) #fit model for mu  
+                  nu.formula = cci_rescaled ~ group, data = pd_beinf, family = beinf) 
 
-      ## check distribution of residuals!! 
-      ## observaties plotten 
-      ## toetsen van zero inflation
-      ## ook kijken naar alleen beta regression (model2?) vs zero inflated beta regression
+### create model for mu
+model2 <- gamlss(cci_rescaled ~ group, data = pd_beinf, family = beinf) 
 
+### check models (NB: AIC a lot lower compared to linear model, quite good model fit)
 summary(model1) 
-summary(model2) #AIC a lot lower compared to linear model, quite good model fit
+summary(model2) 
 
-pdf.plot(model1, from = 0, to = 1) #check model fit
-pdf.plot(model2, from = 0, to = 1)
-
-## interpretation of model
+### interpretation of zero inflated beta regression model:
 ### 1. mu section shows effect of predictors on mean outcome within range of non-zero values (when complications occur)
 ### e.g. if coefficient for group is negative and stat. sign., it suggests that the intervention is associated
 ### with a lower mean value of CCI within the range of non-zero values.
-p
 ### 2. nu section shows effect of predictors on probability of excess zeros (no complications),
 ### i.e. the probability of observing zero's beyond what would be expected based on the beta distribution alone
 ### e.g. if coefficient for group is positive and stat. sign., it suggests that the intervention is associated
 ### with a higher probability of excess zero's in CCI (so greater likelihood of no complications).
 
+### NB: toetsen van zero inflation --> impossible to fit beta regression model with EXACT zero's in outcome
+      
+### check model fit
+pdf.plot(model1, from = 0, to = 1) 
+pdf.plot(model2, from = 0, to = 1)
+
+### check model fit vs residuals, goodness-of-fit
+plot(model1, residuals(model1)) 
+plot(model2, residuals(model2)) 
+
+### interpretation summary of randomised quantile residuals:
+### mean: should be close to 0
+### variance: lower variance indicates that residuals are closely clustered around the mean, suggesting a better fit
+### coef. of skewness: close to 0 indicates that residuals are symmetrically distributed around 0
+### coef. of kurtosis: close to 0
+### Filliben: close to 1 indicates good fit between observed and expected quantiles, suggesting that the model adequately captures the variability in the data
+
+### interpretation of visualization: check chatgpt
+
 ### adjust model for potential confounders from EPD (age, BMI, indication, procedure, chemo, radiation, hormonal..)
 
 ## Statistically test differences in cd_2_or_higher between control-int
+### logistic models 
 logRR_model <- glm(cd_2_or_higher ~ group, family = 'binomial'(link = "log"), data = pd) #fit logistic model with risk ratios
 logOR_model <- glm(cd_2_or_higher ~ group, family = 'binomial', data = pd) #fit logistic model with odds ratios
 tab_model(logOR_model, logRR_model,
@@ -226,5 +244,5 @@ tab_model(logOR_model, logRR_model,
           show.aic = T,
           p.style = "numeric_stars") #AIC indicates good model fit
 
-## adjust model for potential confounders from EPD (age, BMI, indication, procedure, chemo, radiation, hormonal..)
+### adjust model for potential confounders from EPD (age, BMI, indication, procedure, chemo, radiation, hormonal..)
 
